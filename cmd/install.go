@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/altlimit/alt/internal/archive"
@@ -157,6 +158,15 @@ func installOne(arg string, force bool) error {
 		}
 	}
 
+	// On Windows, ensure the binary has a .exe extension.
+	if runtime.GOOS == "windows" && !strings.HasSuffix(strings.ToLower(binaryPath), ".exe") {
+		exePath := binaryPath + ".exe"
+		if err := os.Rename(binaryPath, exePath); err != nil {
+			return fmt.Errorf("renaming binary to .exe: %w", err)
+		}
+		binaryPath = exePath
+	}
+
 	fmt.Printf("  Binary: %s\n", filepath.Base(binaryPath))
 
 	// Default alias is the repo name.
@@ -217,6 +227,7 @@ func findExecutable(files []string, repoName string) string {
 		".sh": true, ".bat": true, ".ps1": true, ".1": true,
 		".tar.gz": true, ".zip": true, ".tgz": true,
 		".license": true, ".licence": true,
+		".sha256": true, ".sha512": true, ".sig": true, ".asc": true,
 	}
 
 	for _, f := range files {

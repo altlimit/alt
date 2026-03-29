@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/altlimit/alt/internal/archive"
@@ -126,6 +127,15 @@ func Run(args []string) error {
 			binaryPath = downloadPath
 			os.Chmod(binaryPath, 0755)
 		}
+	}
+
+	// On Windows, ensure the binary has a .exe extension.
+	if runtime.GOOS == "windows" && !strings.HasSuffix(strings.ToLower(binaryPath), ".exe") {
+		exePath := binaryPath + ".exe"
+		if err := os.Rename(binaryPath, exePath); err != nil {
+			return fmt.Errorf("renaming binary to .exe: %w", err)
+		}
+		binaryPath = exePath
 	}
 
 	// Execute the binary.

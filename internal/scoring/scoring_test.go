@@ -172,3 +172,65 @@ func TestScoreAssets_ArchAliases(t *testing.T) {
 		})
 	}
 }
+
+func TestScoreAssets_WinNotInDarwin(t *testing.T) {
+	// Regression: "win" must NOT match inside "darwin".
+	assets := []github.Asset{
+		{Name: "darwin.tgz"},
+		{Name: "win.zip"},
+	}
+
+	best := BestAsset(assets, "windows", "amd64")
+	if best == nil {
+		t.Fatal("expected a match for windows")
+	}
+	if best.Asset.Name != "win.zip" {
+		t.Errorf("expected win.zip, got %s", best.Asset.Name)
+	}
+
+	// "darwin.tgz" should NOT match windows.
+	scored := ScoreAssets(assets, "windows", "amd64")
+	for _, s := range scored {
+		if s.Asset.Name == "darwin.tgz" && s.OS {
+			t.Error("darwin.tgz should NOT match windows OS")
+		}
+	}
+}
+
+func TestScoreAssets_SitegenWindows(t *testing.T) {
+	// Real-world: altlimit/sitegen releases.
+	assets := []github.Asset{
+		{Name: "darwin-arm64.tgz"},
+		{Name: "darwin.tgz"},
+		{Name: "linux.tgz"},
+		{Name: "win.zip"},
+	}
+
+	best := BestAsset(assets, "windows", "amd64")
+	if best == nil {
+		t.Fatal("expected a match")
+	}
+	if best.Asset.Name != "win.zip" {
+		t.Errorf("expected win.zip for windows, got %s", best.Asset.Name)
+	}
+}
+
+func TestScoreAssets_AltclawWindows(t *testing.T) {
+	// Real-world: altlimit/altclaw releases.
+	assets := []github.Asset{
+		{Name: "altclaw-cli-darwin-amd64.tgz"},
+		{Name: "altclaw-cli-darwin-arm64.tgz"},
+		{Name: "altclaw-cli-linux-amd64.tgz"},
+		{Name: "altclaw-cli-linux-arm64.tgz"},
+		{Name: "altclaw-cli-windows-amd64.zip"},
+	}
+
+	best := BestAsset(assets, "windows", "amd64")
+	if best == nil {
+		t.Fatal("expected a match")
+	}
+	if best.Asset.Name != "altclaw-cli-windows-amd64.zip" {
+		t.Errorf("expected windows asset, got %s", best.Asset.Name)
+	}
+}
+

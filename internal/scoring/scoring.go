@@ -96,7 +96,7 @@ func matchOS(name, goos string) bool {
 		return false
 	}
 	for _, alias := range aliases {
-		if strings.Contains(name, alias) {
+		if containsWord(name, alias) {
 			return true
 		}
 	}
@@ -109,13 +109,40 @@ func matchArch(name, goarch string) bool {
 		return false
 	}
 	for _, alias := range aliases {
-		if strings.Contains(name, alias) {
+		if containsWord(name, alias) {
 			return true
 		}
 	}
-	// Special case: if "x86" is present but NOT "x86_64" or "x64", it's 386.
-	// Conversely, if goarch is amd64 and the file just says "x86" without _64, skip.
 	return false
+}
+
+// containsWord checks if word appears in s as a standalone segment,
+// bounded by start/end of string or common delimiters (-_.).
+// This prevents "win" from matching inside "darwin".
+func containsWord(s, word string) bool {
+	idx := 0
+	for {
+		pos := strings.Index(s[idx:], word)
+		if pos == -1 {
+			return false
+		}
+		pos += idx
+
+		// Check left boundary.
+		leftOk := pos == 0 || isBoundary(s[pos-1])
+		// Check right boundary.
+		end := pos + len(word)
+		rightOk := end == len(s) || isBoundary(s[end])
+
+		if leftOk && rightOk {
+			return true
+		}
+		idx = pos + 1
+	}
+}
+
+func isBoundary(c byte) bool {
+	return c == '-' || c == '_' || c == '.' || c == '/' || c == ' '
 }
 
 func preferenceScore(name string) int {
