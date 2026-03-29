@@ -1,0 +1,6 @@
+# Build output
+/alt
+/alt.exe
+
+# CI release artifacts
+/dist/
