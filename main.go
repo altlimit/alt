@@ -26,6 +26,7 @@ Commands:
   purge     user/repo|user        Remove a tool completely
   versions  user/repo             List locally cached versions
   which     <command>             Show the binary path for a command
+  self-update                     Update alt itself to the latest version
 
 Options:
   --help, -h       Show this help message
@@ -89,6 +90,8 @@ func main() {
 		err = cmd.Versions(commandArgs)
 	case "which":
 		err = cmd.Which(commandArgs)
+	case "self-update":
+		err = cmd.SelfUpdate(version)
 	case "--help", "-h", "help":
 		fmt.Print(usage)
 		os.Exit(0)
