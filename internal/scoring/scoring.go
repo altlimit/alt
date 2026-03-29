@@ -49,7 +49,7 @@ func ScoreAssets(assets []github.Asset, goos, goarch string) []ScoredAsset {
 		osMatch := matchOS(name, goos)
 		archMatch := matchArch(name, goarch)
 
-		// Calculate S = (O × 100) + (A × 100) + P
+		// Calculate S = (O × 100) + (A × 100) + P - penalties
 		s := 0
 		if osMatch {
 			s += 100
@@ -58,6 +58,14 @@ func ScoreAssets(assets []github.Asset, goos, goarch string) []ScoredAsset {
 			s += 100
 		}
 		s += preferenceScore(name)
+
+		// Penalize assets that explicitly name a different arch or OS.
+		if !archMatch && matchesWrongArch(name, goarch) {
+			s -= 50
+		}
+		if !osMatch && matchesWrongOS(name, goos) {
+			s -= 50
+		}
 
 		scored = append(scored, ScoredAsset{
 			Asset: a,
@@ -111,6 +119,40 @@ func matchArch(name, goarch string) bool {
 	for _, alias := range aliases {
 		if containsWord(name, alias) {
 			return true
+		}
+	}
+	return false
+}
+
+// matchesWrongArch returns true if the filename explicitly contains an
+// architecture keyword that does NOT match goarch. This is used to penalize
+// assets that are clearly built for a different architecture.
+func matchesWrongArch(name, goarch string) bool {
+	for arch, aliases := range archAliases {
+		if arch == goarch {
+			continue
+		}
+		for _, alias := range aliases {
+			if containsWord(name, alias) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// matchesWrongOS returns true if the filename explicitly contains an
+// OS keyword that does NOT match goos. This is used to penalize assets
+// that are clearly built for a different operating system.
+func matchesWrongOS(name, goos string) bool {
+	for os, aliases := range osAliases {
+		if os == goos {
+			continue
+		}
+		for _, alias := range aliases {
+			if containsWord(name, alias) {
+				return true
+			}
 		}
 	}
 	return false

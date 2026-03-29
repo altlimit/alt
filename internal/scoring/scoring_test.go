@@ -118,9 +118,13 @@ func TestScoreAssets_NoMatch(t *testing.T) {
 		{Name: "tool-linux-amd64.tar.gz"},
 	}
 
-	best := BestAsset(assets, "windows", "arm64")
-	if best != nil {
-		t.Errorf("expected no match for windows/arm64, got %s (score %d)", best.Asset.Name, best.Score)
+	scored := ScoreAssets(assets, "windows", "arm64")
+	// This asset has wrong OS (linux vs windows) and wrong arch (amd64 vs arm64),
+	// so it gets penalized below the filter threshold.
+	for _, s := range scored {
+		if s.OS || s.Arch {
+			t.Errorf("expected no OS or Arch match, got OS=%v Arch=%v for %s", s.OS, s.Arch, s.Asset.Name)
+		}
 	}
 }
 
@@ -231,6 +235,36 @@ func TestScoreAssets_AltclawWindows(t *testing.T) {
 	}
 	if best.Asset.Name != "altclaw-cli-windows-amd64.zip" {
 		t.Errorf("expected windows asset, got %s", best.Asset.Name)
+	}
+}
+
+func TestScoreAssets_AltclawLinuxAmd64_ArchNeutral(t *testing.T) {
+	// Regression: altclaw release has arch-neutral linux asset (amd64 build)
+	// and an explicit arm64 asset. On amd64, the arch-neutral one must win.
+	assets := []github.Asset{
+		{Name: "altclaw-cli-darwin-arm64.tgz"},
+		{Name: "altclaw-cli-darwin.tgz"},
+		{Name: "altclaw-cli-linux-arm64.tgz"},
+		{Name: "altclaw-cli-linux.tgz"},
+		{Name: "altclaw-cli-windows.zip"},
+		{Name: "altclaw-gui-darwin-arm64.tgz"},
+		{Name: "altclaw-gui-linux.tgz"},
+		{Name: "altclaw-gui-windows.zip"},
+	}
+
+	best := BestAsset(assets, "linux", "amd64")
+	if best == nil {
+		t.Fatal("expected a match")
+	}
+	if best.Asset.Name != "altclaw-cli-linux.tgz" && best.Asset.Name != "altclaw-gui-linux.tgz" {
+		t.Errorf("expected arch-neutral linux asset, got %s (score: %d)", best.Asset.Name, best.Score)
+	}
+	// The arm64 asset must score lower.
+	scored := ScoreAssets(assets, "linux", "amd64")
+	for _, s := range scored {
+		if s.Asset.Name == "altclaw-cli-linux-arm64.tgz" && s.Score >= best.Score {
+			t.Errorf("arm64 asset should score lower than arch-neutral, got %d vs %d", s.Score, best.Score)
+		}
 	}
 }
 
