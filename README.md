@@ -22,6 +22,20 @@ curl -fsSL https://raw.githubusercontent.com/altlimit/alt/main/scripts/install.s
 powershell -Command "iwr https://raw.githubusercontent.com/altlimit/alt/main/scripts/install.ps1 -useb | iex"
 ```
 
+### Quick Run (No Install Required)
+
+Run any tool instantly — alt is installed automatically on first use:
+
+**Linux & macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/altlimit/alt/main/scripts/run.sh | sh -s -- user/repo [args...]
+```
+
+**Windows (PowerShell):**
+```powershell
+powershell -Command "$env:ALT_RUN='user/repo [args...]'; iwr https://raw.githubusercontent.com/altlimit/alt/main/scripts/run.ps1 -useb | iex"
+```
+
 ## Quick Start
 
 ```bash
@@ -153,6 +167,12 @@ curl -fsSL https://raw.githubusercontent.com/altlimit/alt/main/scripts/install.s
 
 # Install your tool
 alt install your-username/your-repo
+```
+
+Or let them run it instantly with zero setup:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/altlimit/alt/main/scripts/run.sh | sh -s -- your-username/your-repo
 ```
 
 Just publish your binaries as GitHub Release assets. alt handles OS/architecture detection automatically.
