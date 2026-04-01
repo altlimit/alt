@@ -19,14 +19,28 @@ Write-Host "Detected: windows/$Arch"
 
 # Get latest release tag
 try {
-    $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers @{ "User-Agent" = "alt-installer" }
+    $Headers = @{
+        "User-Agent" = "alt-cli/1.0"
+        "Accept"     = "application/vnd.github+json"
+    }
+    if ($env:GITHUB_TOKEN) {
+        $Headers["Authorization"] = "Bearer $env:GITHUB_TOKEN"
+    }
+    $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $Headers
     $Latest = $Release.tag_name
 } catch {
     Write-Host "Error: Could not determine latest release."
-    Write-Host $_.Exception.Message
-    if ($_.Exception.Message -match "rate limit") {
+    $StatusCode = $_.Exception.Response.StatusCode.value__
+    if ($StatusCode -eq 403 -or $_.Exception.Message -match "rate limit") {
         Write-Host ""
-        Write-Host "You may be hitting the GitHub API rate limit. Set GITHUB_TOKEN to fix this."
+        Write-Host "GitHub API rate limit exceeded. Set GITHUB_TOKEN to increase your limit:"
+        Write-Host "  `$env:GITHUB_TOKEN = 'your_token'"
+    } elseif ($StatusCode -eq 404) {
+        Write-Host ""
+        Write-Host "No releases found for $Repo."
+        Write-Host "Check: https://github.com/$Repo/releases"
+    } else {
+        Write-Host $_.Exception.Message
     }
     exit 1
 }

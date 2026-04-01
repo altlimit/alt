@@ -35,15 +35,29 @@ esac
 echo "Detected: ${OS}/${ARCH}"
 
 # Get latest release tag
-API_RESPONSE=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>&1) || true
+RELEASE_URL="https://api.github.com/repos/${REPO}/releases/latest"
+if [ -n "$GITHUB_TOKEN" ]; then
+    API_RESPONSE=$(curl -sSL -H "Accept: application/vnd.github+json" -H "User-Agent: alt-cli/1.0" -H "Authorization: Bearer ${GITHUB_TOKEN}" "$RELEASE_URL" 2>&1) || true
+else
+    API_RESPONSE=$(curl -sSL -H "Accept: application/vnd.github+json" -H "User-Agent: alt-cli/1.0" "$RELEASE_URL" 2>&1) || true
+fi
 LATEST=$(echo "$API_RESPONSE" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
 if [ -z "$LATEST" ]; then
     echo "Error: Could not determine latest release."
     case "$API_RESPONSE" in
-        *rate*limit*|*API*rate*)
+        *rate*limit*|*rate*exceeded*|*403*)
             echo ""
-            echo "You may be hitting the GitHub API rate limit. Set GITHUB_TOKEN to fix this:"
+            echo "GitHub API rate limit exceeded. Set GITHUB_TOKEN to increase your limit:"
             echo "  export GITHUB_TOKEN=your_token"
+            ;;
+        *Not*Found*|*404*)
+            echo ""
+            echo "No releases found for ${REPO}."
+            echo "Check: https://github.com/${REPO}/releases"
+            ;;
+        *)
+            echo ""
+            echo "API response: $API_RESPONSE"
             ;;
     esac
     exit 1
